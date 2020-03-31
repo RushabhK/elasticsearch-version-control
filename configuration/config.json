@@ -1,0 +1,8 @@
+{
+  "elasticsearch": {
+    "client_params": {
+      "addresses": ["http://elastic-search:9200"]
+    },
+    "reindex_timeout_in_minutes": 15
+  }
+}
