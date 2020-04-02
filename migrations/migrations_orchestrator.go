@@ -16,10 +16,10 @@ type MigrationsOrchestrator interface {
 type migrationsOrchestrator struct {
 	indexService  service.IndexService
 	aliasService  service.AliasService
-	versionHelper helper.VersionHelper
+	versionHelper helper.VersionDetailsProvider
 }
 
-func NewMigrationsOrchestrator(indexService service.IndexService, aliasService service.AliasService, versionHelper helper.VersionHelper) MigrationsOrchestrator {
+func NewMigrationsOrchestrator(indexService service.IndexService, aliasService service.AliasService, versionHelper helper.VersionDetailsProvider) MigrationsOrchestrator {
 	return migrationsOrchestrator{indexService: indexService, aliasService: aliasService, versionHelper: versionHelper}
 }
 

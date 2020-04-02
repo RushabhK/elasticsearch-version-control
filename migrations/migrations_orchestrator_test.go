@@ -15,7 +15,7 @@ type MigrationsOrchestratorTestSuite struct {
 	mockCtrl               *gomock.Controller
 	indexService           *mocks.MockIndexService
 	aliasService           *mocks.MockAliasService
-	versionHelper          *mocks.MockVersionHelper
+	versionDetailsProvider *mocks.MockVersionDetailsProvider
 	migrationsOrchestrator MigrationsOrchestrator
 }
 
@@ -27,8 +27,8 @@ func (suite *MigrationsOrchestratorTestSuite) SetupTest() {
 	suite.mockCtrl = gomock.NewController(suite.T())
 	suite.indexService = mocks.NewMockIndexService(suite.mockCtrl)
 	suite.aliasService = mocks.NewMockAliasService(suite.mockCtrl)
-	suite.versionHelper = mocks.NewMockVersionHelper(suite.mockCtrl)
-	suite.migrationsOrchestrator = NewMigrationsOrchestrator(suite.indexService, suite.aliasService, suite.versionHelper)
+	suite.versionDetailsProvider = mocks.NewMockVersionDetailsProvider(suite.mockCtrl)
+	suite.migrationsOrchestrator = NewMigrationsOrchestrator(suite.indexService, suite.aliasService, suite.versionDetailsProvider)
 }
 
 func (suite MigrationsOrchestratorTestSuite) TestShouldCreateNewIndicesAndSetAliasToLatestVersion() {
@@ -42,7 +42,7 @@ func (suite MigrationsOrchestratorTestSuite) TestShouldCreateNewIndicesAndSetAli
 		indexDetailsV2,
 		indexDetailsV3,
 	}
-	suite.versionHelper.EXPECT().GetNextIndexVersions(alias, currentVersion).Return(indexDetails, nil)
+	suite.versionDetailsProvider.EXPECT().GetNextIndexVersions(alias, currentVersion).Return(indexDetails, nil)
 	suite.indexService.EXPECT().DeleteIndex("index_name_v2").Return(nil)
 	suite.indexService.EXPECT().DeleteIndex("index_name_v3").Return(nil)
 	suite.indexService.EXPECT().CreateIndex("index_name_v2", "index-config-2").Return(nil)
@@ -75,7 +75,7 @@ func (suite MigrationsOrchestratorTestSuite) TestShouldCreateIndexAndAliasWhenAl
 		indexDetailsV1,
 		indexDetailsV2,
 	}
-	suite.versionHelper.EXPECT().GetNextIndexVersions(alias, 0).Return(indexDetails, nil)
+	suite.versionDetailsProvider.EXPECT().GetNextIndexVersions(alias, 0).Return(indexDetails, nil)
 	suite.indexService.EXPECT().DeleteIndex("index_name_v1").Return(nil)
 	suite.indexService.EXPECT().DeleteIndex("index_name_v2").Return(nil)
 	suite.indexService.EXPECT().CreateIndex("index_name_v1", "index-config-1").Return(nil)
@@ -106,7 +106,7 @@ func (suite MigrationsOrchestratorTestSuite) TestShouldReturnErrorWhenVersionHel
 	suite.aliasService.EXPECT().GetIndexVersion(alias).Return(currentVersion, nil)
 	suite.indexService.EXPECT().GetDocumentsCount("index_name_v1").Return(1, nil)
 	err := errors.New("Could not find folder for migrations")
-	suite.versionHelper.EXPECT().GetNextIndexVersions(alias, currentVersion).Return(nil, err)
+	suite.versionDetailsProvider.EXPECT().GetNextIndexVersions(alias, currentVersion).Return(nil, err)
 
 	migrateErr := suite.migrationsOrchestrator.Migrate(alias)
 
@@ -122,7 +122,7 @@ func (suite MigrationsOrchestratorTestSuite) TestShouldReturnErrorWhenDeleteInde
 	indexDetails := []model.IndexDetails{
 		indexDetailsV2,
 	}
-	suite.versionHelper.EXPECT().GetNextIndexVersions(alias, currentVersion).Return(indexDetails, nil)
+	suite.versionDetailsProvider.EXPECT().GetNextIndexVersions(alias, currentVersion).Return(indexDetails, nil)
 	deleteError := errors.New("deletion error")
 	suite.indexService.EXPECT().DeleteIndex("index_name_v2").Return(deleteError)
 
@@ -140,7 +140,7 @@ func (suite MigrationsOrchestratorTestSuite) TestShouldReturnErrorWhenCreateInde
 	indexDetails := []model.IndexDetails{
 		indexDetailsV2,
 	}
-	suite.versionHelper.EXPECT().GetNextIndexVersions(alias, currentVersion).Return(indexDetails, nil)
+	suite.versionDetailsProvider.EXPECT().GetNextIndexVersions(alias, currentVersion).Return(indexDetails, nil)
 	suite.indexService.EXPECT().DeleteIndex("index_name_v2").Return(nil)
 	createError := errors.New("creation error")
 	suite.indexService.EXPECT().CreateIndex("index_name_v2", "index-config-2").Return(createError)
@@ -159,7 +159,7 @@ func (suite MigrationsOrchestratorTestSuite) TestShouldReturnErrorWhenReIndexFai
 	indexDetails := []model.IndexDetails{
 		indexDetailsV2,
 	}
-	suite.versionHelper.EXPECT().GetNextIndexVersions(alias, currentVersion).Return(indexDetails, nil)
+	suite.versionDetailsProvider.EXPECT().GetNextIndexVersions(alias, currentVersion).Return(indexDetails, nil)
 	suite.indexService.EXPECT().DeleteIndex("index_name_v2").Return(nil)
 	suite.indexService.EXPECT().CreateIndex("index_name_v2", "index-config-2").Return(nil)
 	reIndexError := errors.New("reIndex error")
@@ -180,7 +180,7 @@ func (suite MigrationsOrchestratorTestSuite) TestShouldReturnErrorWhenReindexedC
 	indexDetails := []model.IndexDetails{
 		indexDetailsV2,
 	}
-	suite.versionHelper.EXPECT().GetNextIndexVersions(alias, currentVersion).Return(indexDetails, nil)
+	suite.versionDetailsProvider.EXPECT().GetNextIndexVersions(alias, currentVersion).Return(indexDetails, nil)
 	suite.indexService.EXPECT().DeleteIndex("index_name_v2").Return(nil)
 	suite.indexService.EXPECT().CreateIndex("index_name_v2", "index-config-2").Return(nil)
 	suite.indexService.EXPECT().ReIndex("index_name_v1", "index_name_v2", "version-2-script").Return(3, nil)
@@ -200,7 +200,7 @@ func (suite MigrationsOrchestratorTestSuite) TestShouldReturnErrorWhenSetAliasFa
 	indexDetails := []model.IndexDetails{
 		indexDetailsV2,
 	}
-	suite.versionHelper.EXPECT().GetNextIndexVersions(alias, currentVersion).Return(indexDetails, nil)
+	suite.versionDetailsProvider.EXPECT().GetNextIndexVersions(alias, currentVersion).Return(indexDetails, nil)
 	suite.indexService.EXPECT().DeleteIndex("index_name_v2").Return(nil)
 	suite.indexService.EXPECT().CreateIndex("index_name_v2", "index-config-2").Return(nil)
 	suite.indexService.EXPECT().ReIndex("index_name_v1", "index_name_v2", "version-2-script").Return(1, nil)
