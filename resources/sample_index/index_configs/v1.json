@@ -1,0 +1,22 @@
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 1
+    }
+  },
+  "mappings": {
+    "properties": {
+      "name": {
+        "type": "keyword",
+        "index": false
+      },
+      "age": {
+        "type": "text"
+      },
+      "gender": {
+        "type": "keyword"
+      }
+    }
+  }
+}

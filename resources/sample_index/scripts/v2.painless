@@ -1,0 +1,1 @@
+ctx._source.renamed_gender = ctx._source.remove('gender')
