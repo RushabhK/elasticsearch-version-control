@@ -1,6 +1,12 @@
 package service
 
-import "github.com/elastic/go-elasticsearch/v7"
+import (
+	"errors"
+	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"net/http"
+	"strings"
+)
 
 type IndexService interface {
 	CreateIndex(indexName string, configuration string) error
@@ -19,8 +25,19 @@ func NewIndexService(esClient *elasticsearch.Client) IndexService {
 	}
 }
 
-func (indexService) CreateIndex(indexName string, configuration string) error {
-	panic("implement me")
+func (indexService indexService) CreateIndex(indexName string, configuration string) error {
+	response, creationError := indexService.esClient.Indices.Create(indexName, func(request *esapi.IndicesCreateRequest) {
+		request.Index = indexName
+		request.Body = strings.NewReader(configuration)
+	})
+
+	if creationError != nil {
+		return creationError
+	}
+	if response.StatusCode != http.StatusOK {
+		return errors.New("could not create index")
+	}
+	return nil
 }
 
 func (indexService) ReIndex(sourceIndex string, targetIndex string, script string) (int, error) {
