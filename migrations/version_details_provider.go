@@ -1,4 +1,4 @@
-package helper
+package migrations
 
 import (
 	"elasticsearch-version-control/model"

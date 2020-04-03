@@ -2,7 +2,6 @@ package migrations
 
 import (
 	migrations_error "elasticsearch-version-control/error"
-	"elasticsearch-version-control/helper"
 	"elasticsearch-version-control/service"
 	"errors"
 	"fmt"
@@ -14,13 +13,13 @@ type MigrationsOrchestrator interface {
 }
 
 type migrationsOrchestrator struct {
-	indexService  service.IndexService
-	aliasService  service.AliasService
-	versionHelper helper.VersionDetailsProvider
+	indexService           service.IndexService
+	aliasService           service.AliasService
+	versionDetailsProvider VersionDetailsProvider
 }
 
-func NewMigrationsOrchestrator(indexService service.IndexService, aliasService service.AliasService, versionHelper helper.VersionDetailsProvider) MigrationsOrchestrator {
-	return migrationsOrchestrator{indexService: indexService, aliasService: aliasService, versionHelper: versionHelper}
+func NewMigrationsOrchestrator(indexService service.IndexService, aliasService service.AliasService, versionDetailsProvider VersionDetailsProvider) MigrationsOrchestrator {
+	return migrationsOrchestrator{indexService: indexService, aliasService: aliasService, versionDetailsProvider: versionDetailsProvider}
 }
 
 func (orchestrator migrationsOrchestrator) Migrate(alias string) error {
@@ -39,7 +38,7 @@ func (orchestrator migrationsOrchestrator) Migrate(alias string) error {
 			return countErr
 		}
 	}
-	indexDetails, nextVersionsError := orchestrator.versionHelper.GetNextIndexVersions(alias, currentIndexVersion)
+	indexDetails, nextVersionsError := orchestrator.versionDetailsProvider.GetNextIndexVersions(alias, currentIndexVersion)
 	if nextVersionsError != nil {
 		return nextVersionsError
 	}
