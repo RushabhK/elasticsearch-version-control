@@ -1,9 +1,12 @@
 package service
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
 )
@@ -55,6 +58,22 @@ func (indexService indexService) DeleteIndex(indexName string) error {
 	return nil
 }
 
-func (indexService) GetDocumentsCount(indexName string) (int, error) {
-	panic("implement me")
+func (indexService indexService) GetDocumentsCount(indexName string) (int, error) {
+	response, err := indexService.esClient.Count(func(request *esapi.CountRequest) {
+		request.Index = []string{indexName}
+	})
+	if err != nil {
+		return 0, nil
+	}
+	if response.StatusCode != http.StatusOK {
+		errorMsg := "Cannot find documents for index " + indexName
+		logrus.Error(errorMsg)
+		return 0, errors.New(errorMsg)
+	}
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(response.Body)
+	var responseObj map[string]interface{}
+	json.Unmarshal(buf.Bytes(), &responseObj)
+	count := responseObj["count"]
+	return int(count.(float64)), nil
 }

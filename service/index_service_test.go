@@ -107,3 +107,27 @@ func (suite IndexServiceIntegrationTestSuite) TestShouldDeleteIndex() {
 	suite.Nil(isIndexPresentError)
 	suite.False(isIndexPresent)
 }
+
+func (suite IndexServiceIntegrationTestSuite) TestShouldReturnNumberOfDocumentsForIndex() {
+	createIndexErr := suite.indexService.CreateIndex(INDEX_NAME, INDEX_CONFIG)
+	suite.Nil(createIndexErr)
+
+	createErr1 := suite.testUtil.CreateDocument(INDEX_NAME, "1", `{"description": "hello", "b_id": "10"}`)
+	createErr2 := suite.testUtil.CreateDocument(INDEX_NAME, "2", `{"description": "hello", "b_id": "20"}`)
+	createErr3 := suite.testUtil.CreateDocument(INDEX_NAME, "3", `{"description": "hello", "b_id": "30"}`)
+	suite.Nil(createErr1)
+	suite.Nil(createErr2)
+	suite.Nil(createErr3)
+
+	count, documentsCountErr := suite.indexService.GetDocumentsCount(INDEX_NAME)
+
+	suite.Nil(documentsCountErr)
+	suite.Equal(3, count)
+}
+
+func (suite IndexServiceIntegrationTestSuite) TestShouldReturnErrorWhenIndexIsNotPresent() {
+	count, documentsCountErr := suite.indexService.GetDocumentsCount(INDEX_NAME)
+
+	suite.Equal(errors.New("Cannot find documents for index test_index_v10"), documentsCountErr)
+	suite.Equal(0, count)
+}
