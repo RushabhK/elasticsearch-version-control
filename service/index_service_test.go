@@ -93,3 +93,17 @@ func (suite IndexServiceIntegrationTestSuite) TestShouldReturnCreationErrorWhenI
 	err := suite.indexService.CreateIndex(INDEX_NAME, `{"invalid_config": true}`)
 	suite.NotNil(err)
 }
+
+func (suite IndexServiceIntegrationTestSuite) TestShouldDeleteIndex() {
+	suite.indexService.CreateIndex(INDEX_NAME, INDEX_CONFIG)
+	indexPresent, indexPresentError := suite.testUtil.IsIndexPresent(INDEX_NAME)
+	suite.Nil(indexPresentError)
+	suite.True(indexPresent)
+
+	deletionError := suite.indexService.DeleteIndex(INDEX_NAME)
+
+	suite.Nil(deletionError)
+	isIndexPresent, isIndexPresentError := suite.testUtil.IsIndexPresent(INDEX_NAME)
+	suite.Nil(isIndexPresentError)
+	suite.False(isIndexPresent)
+}

@@ -44,8 +44,15 @@ func (indexService) ReIndex(sourceIndex string, targetIndex string, script strin
 	panic("implement me")
 }
 
-func (indexService) DeleteIndex(indexName string) error {
-	panic("implement me")
+func (indexService indexService) DeleteIndex(indexName string) error {
+	response, deleteError := indexService.esClient.Indices.Delete([]string{indexName})
+	if deleteError != nil {
+		return deleteError
+	}
+	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusNotFound {
+		return errors.New("could not delete index: " + indexName)
+	}
+	return nil
 }
 
 func (indexService) GetDocumentsCount(indexName string) (int, error) {
