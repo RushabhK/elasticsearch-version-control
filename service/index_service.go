@@ -108,7 +108,17 @@ func (indexService indexService) GetDocumentsCount(indexName string) (int, error
 
 func (indexService indexService) getReindexRequestBody(sourceIndex, targetIndex, script string) *strings.Reader {
 	var requestBody string
-	requestBody = fmt.Sprintf(`{
+	if script == "" {
+		requestBody = fmt.Sprintf(`{
+									"source": {
+										"index": "%v"
+									},
+									"dest": {
+										"index": "%v"
+									}
+								}`, sourceIndex, targetIndex)
+	} else {
+		requestBody = fmt.Sprintf(`{
 							"source": {
 								"index": "%v"
 							},
@@ -120,5 +130,6 @@ func (indexService indexService) getReindexRequestBody(sourceIndex, targetIndex,
 								"source": "%v"
 							}
 						}`, sourceIndex, targetIndex, script)
+	}
 	return strings.NewReader(requestBody)
 }

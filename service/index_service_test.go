@@ -166,3 +166,41 @@ func (suite IndexServiceIntegrationTestSuite) TestShouldReIndexToNewVersionWhenF
 	suite.Nil(getErr)
 	suite.JSONEq(`{"description_2": "hello", "b_id": "10"}`, document)
 }
+
+func (suite IndexServiceIntegrationTestSuite) TestShouldReIndexToNewVersionWhenNewFieldIsAddedAndScriptIsEmpty() {
+	createIndexErr := suite.indexService.CreateIndex(INDEX_NAME, INDEX_CONFIG)
+	suite.Nil(createIndexErr)
+
+	documentId := "1"
+	createErr := suite.testUtil.CreateDocument(INDEX_NAME, documentId, `{"description": "hello", "b_id": "10"}`)
+	suite.Nil(createErr)
+
+	targetIndexConfig := `{
+						  "mappings": {
+							"dynamic": "strict",
+							"properties": {
+							  "description": {
+								"type": "text"
+							  },
+							  "b_id": {
+								"type": "keyword"
+							  },
+							  "new_field": {
+								"type": "keyword"
+							  }							
+							}
+						  }
+						}`
+	createErr = suite.indexService.CreateIndex(TARGET_INDEX, targetIndexConfig)
+	suite.Nil(createErr)
+
+	script := ""
+
+	createdDocCount, reindexErr := suite.indexService.ReIndex(INDEX_NAME, TARGET_INDEX, script)
+
+	suite.Nil(reindexErr)
+	suite.Equal(1, createdDocCount)
+	document, getErr := suite.testUtil.GetDocument(TARGET_INDEX, documentId)
+	suite.Nil(getErr)
+	suite.JSONEq(`{"description": "hello", "b_id": "10"}`, document)
+}
