@@ -2,6 +2,7 @@ package testing_utils
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
@@ -47,4 +48,24 @@ func (testUtil TestUtil) CreateDocument(index string, id string, body string) er
 	testUtil.ElasticClient.Indices.Refresh()
 
 	return nil
+}
+
+func (testUtil TestUtil) GetDocument(index string, id string) (string, error) {
+	response, err := testUtil.ElasticClient.Get(index, id)
+	if err != nil {
+		return "", err
+	}
+	if response.StatusCode != http.StatusOK {
+		return "", errors.New("Did not find document")
+	}
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(response.Body)
+	document := esDoc{}
+	json.Unmarshal(buf.Bytes(), &document)
+	content, _ := json.Marshal(document.Source)
+	return string(content), nil
+}
+
+type esDoc struct {
+	Source map[string]interface{} `json:"_source"`
 }

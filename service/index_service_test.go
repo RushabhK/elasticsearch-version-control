@@ -131,3 +131,38 @@ func (suite IndexServiceIntegrationTestSuite) TestShouldReturnErrorWhenIndexIsNo
 	suite.Equal(errors.New("Cannot find documents for index test_index_v10"), documentsCountErr)
 	suite.Equal(0, count)
 }
+
+func (suite IndexServiceIntegrationTestSuite) TestShouldReIndexToNewVersionWhenFieldIsRenamed() {
+	createIndexErr := suite.indexService.CreateIndex(INDEX_NAME, INDEX_CONFIG)
+	suite.Nil(createIndexErr)
+
+	documentId := "1"
+	createErr := suite.testUtil.CreateDocument(INDEX_NAME, documentId, `{"description": "hello", "b_id": "10"}`)
+	suite.Nil(createErr)
+
+	targetIndexConfig := `{
+						  "mappings": {
+							"dynamic": "strict",
+							"properties": {
+							  "description_2": {
+								"type": "text"
+							  },
+							  "b_id": {
+								"type": "keyword"
+							  }
+							}
+						  }
+						}`
+	createErr = suite.indexService.CreateIndex(TARGET_INDEX, targetIndexConfig)
+	suite.Nil(createErr)
+
+	script := "ctx._source.description_2 = ctx._source.remove('description')"
+
+	createdDocCount, reindexErr := suite.indexService.ReIndex(INDEX_NAME, TARGET_INDEX, script)
+
+	suite.Nil(reindexErr)
+	suite.Equal(1, createdDocCount)
+	document, getErr := suite.testUtil.GetDocument(TARGET_INDEX, documentId)
+	suite.Nil(getErr)
+	suite.JSONEq(`{"description_2": "hello", "b_id": "10"}`, document)
+}

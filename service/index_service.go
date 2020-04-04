@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/sirupsen/logrus"
@@ -43,8 +44,35 @@ func (indexService indexService) CreateIndex(indexName string, configuration str
 	return nil
 }
 
-func (indexService) ReIndex(sourceIndex string, targetIndex string, script string) (int, error) {
-	panic("implement me")
+func (indexService indexService) ReIndex(sourceIndex string, targetIndex string, script string) (int, error) {
+	reader := indexService.getReindexRequestBody(sourceIndex, targetIndex, script)
+	reIndexRequest := esapi.ReindexRequest{
+		Body:   reader,
+		Pretty: true,
+	}
+
+	response, reIndexError := reIndexRequest.Do(nil, indexService.esClient)
+
+	if reIndexError != nil {
+		logrus.Error("Error while reindexing: ", reIndexError.Error())
+		return 0, reIndexError
+	} else if response.StatusCode != http.StatusOK {
+		errorMessage := fmt.Sprintf("could not reindex from %v to %v", sourceIndex, targetIndex)
+		logrus.Error(errorMessage)
+		return 0, errors.New(errorMessage)
+	}
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(response.Body)
+	_, refreshError := indexService.esClient.Indices.Refresh()
+	if refreshError != nil {
+		return 0, refreshError
+	}
+	responseString := buf.String()
+	logrus.Info("Reindexing source: ", sourceIndex, ", targetIndex: ", targetIndex, ", Response: ", responseString)
+	var responseObj map[string]interface{}
+	json.Unmarshal(buf.Bytes(), &responseObj)
+	createdDocCount := int(responseObj["created"].(float64))
+	return createdDocCount, nil
 }
 
 func (indexService indexService) DeleteIndex(indexName string) error {
@@ -76,4 +104,21 @@ func (indexService indexService) GetDocumentsCount(indexName string) (int, error
 	json.Unmarshal(buf.Bytes(), &responseObj)
 	count := responseObj["count"]
 	return int(count.(float64)), nil
+}
+
+func (indexService indexService) getReindexRequestBody(sourceIndex, targetIndex, script string) *strings.Reader {
+	var requestBody string
+	requestBody = fmt.Sprintf(`{
+							"source": {
+								"index": "%v"
+							},
+							"dest": {
+								"index": "%v"
+							},
+							"script": {
+								"lang": "painless",
+								"source": "%v"
+							}
+						}`, sourceIndex, targetIndex, script)
+	return strings.NewReader(requestBody)
 }
