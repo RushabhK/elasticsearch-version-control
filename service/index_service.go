@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type IndexService interface {
@@ -20,12 +21,14 @@ type IndexService interface {
 }
 
 type indexService struct {
-	esClient *elasticsearch.Client
+	esClient                *elasticsearch.Client
+	reindexTimeoutInMinutes time.Duration
 }
 
-func NewIndexService(esClient *elasticsearch.Client) IndexService {
+func NewIndexService(esClient *elasticsearch.Client, reindexTimeoutInMinutes time.Duration) IndexService {
 	return indexService{
-		esClient: esClient,
+		esClient:                esClient,
+		reindexTimeoutInMinutes: reindexTimeoutInMinutes,
 	}
 }
 
@@ -82,6 +85,7 @@ func (indexService indexService) ReIndex(sourceIndex string, targetIndex string,
 		Body:              reader,
 		Pretty:            true,
 		WaitForCompletion: &waitForCompletion,
+		Timeout:           indexService.reindexTimeoutInMinutes * time.Minute,
 	}
 
 	response, reIndexError := reIndexRequest.Do(nil, indexService.esClient)

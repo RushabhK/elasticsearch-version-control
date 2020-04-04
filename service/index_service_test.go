@@ -50,7 +50,7 @@ func (suite *IndexServiceIntegrationTestSuite) SetupSuite() {
 	suite.esClient, _ = elasticsearch.NewClient(elasticsearch.Config{
 		Addresses: []string{"http://localhost:9200"},
 	})
-	suite.indexService = NewIndexService(suite.esClient)
+	suite.indexService = NewIndexService(suite.esClient, 1)
 	suite.testUtil = testing_utils.TestUtil{ElasticClient: suite.esClient}
 }
 
