@@ -1,12 +1,15 @@
 package service
 
 import (
+	"bytes"
 	migrationsError "elasticsearch-version-control/error"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -54,5 +57,22 @@ func (aliasService aliasService) GetIndexVersion(alias string) (int, error) {
 	} else if response.StatusCode != http.StatusOK {
 		return -1, migrationsError.AliasNotFoundError
 	}
-	panic("Not implemented")
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(response.Body)
+	var aliasResponse map[string]interface{}
+	json.Unmarshal(buf.Bytes(), &aliasResponse)
+	index := ""
+	for k := range aliasResponse {
+		index = k
+		break
+	}
+	if index == "" {
+		return -1, migrationsError.AliasNotFoundError
+	}
+	splitStr := strings.Split(index, "_v")
+	if len(splitStr) != 2 {
+		return -1, errors.New("index name not in valid format")
+	}
+	return strconv.Atoi(splitStr[1])
 }

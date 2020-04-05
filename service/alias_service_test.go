@@ -74,3 +74,32 @@ func (suite AliasServiceTestSuite) TestShouldReturnAliasNotFoundErrorWhenAliasIs
 	suite.Equal(migrationsError.AliasNotFoundError, versionError)
 	suite.Equal(-1, indexVersion)
 }
+
+func (suite AliasServiceTestSuite) TestShouldGetIndexVersionForAlias() {
+	index := "index_v5"
+	alias := "index"
+	createIndexErr := suite.indexService.CreateIndex(index, INDEX_CONFIG)
+	suite.Nil(createIndexErr)
+	setAliasError := suite.aliasService.SetAlias(alias, index)
+	suite.Nil(setAliasError)
+
+	indexVersion, versionError := suite.aliasService.GetIndexVersion(alias)
+
+	suite.Nil(versionError)
+	suite.Equal(5, indexVersion)
+	suite.indexService.DeleteIndex(index)
+}
+
+func (suite AliasServiceTestSuite) TestShouldReturnErrorWhenIndexOfAliasIsNotValidFormat() {
+	invalidIndexName := "not-valid-index-name"
+	createError := suite.indexService.CreateIndex(invalidIndexName, INDEX_CONFIG)
+	suite.Nil(createError)
+	setAliasError := suite.aliasService.SetAlias(ALIAS, invalidIndexName)
+	suite.Nil(setAliasError)
+
+	indexVersion, versionError := suite.aliasService.GetIndexVersion(ALIAS)
+
+	suite.Equal(errors.New("index name not in valid format"), versionError)
+	suite.Equal(-1, indexVersion)
+	suite.indexService.DeleteIndex(invalidIndexName)
+}
