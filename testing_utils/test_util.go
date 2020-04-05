@@ -50,6 +50,27 @@ func (testUtil TestUtil) CreateDocument(index string, id string, body string) er
 	return nil
 }
 
+func (testUtil TestUtil) GetIndexSetByAlias(alias string) (string, error) {
+	response, err := testUtil.ElasticClient.Indices.GetAlias(func(request *esapi.IndicesGetAliasRequest) {
+		request.Name = []string{alias}
+	})
+	if err != nil {
+		return "", err
+	}
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(response.Body)
+	var aliasResponse map[string]interface{}
+	json.Unmarshal(buf.Bytes(), &aliasResponse)
+	var index string
+	for k := range aliasResponse {
+		index = k
+	}
+	if index == "" {
+		return index, errors.New("No index associated with alias")
+	}
+	return index, nil
+}
+
 func (testUtil TestUtil) GetDocument(index string, id string) (string, error) {
 	response, err := testUtil.ElasticClient.Get(index, id)
 	if err != nil {
