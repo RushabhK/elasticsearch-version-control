@@ -27,6 +27,7 @@ func (suite *AliasServiceTestSuite) SetupSuite() {
 		Addresses: []string{"http://localhost:9200"},
 	})
 	suite.indexService = NewIndexService(suite.esClient, 1)
+	suite.aliasService = NewAliasService(suite.esClient)
 	suite.testUtil = testing_utils.TestUtil{ElasticClient: suite.esClient}
 }
 
