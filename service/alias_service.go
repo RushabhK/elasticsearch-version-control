@@ -1,9 +1,11 @@
 package service
 
 import (
+	migrationsError "elasticsearch-version-control/error"
 	"errors"
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"net/http"
 	"strings"
 )
@@ -42,6 +44,15 @@ func (aliasService aliasService) SetAlias(alias string, index string) error {
 	return nil
 }
 
-func (aliasService) GetIndexVersion(alias string) (int, error) {
-	panic("implement me")
+func (aliasService aliasService) GetIndexVersion(alias string) (int, error) {
+	response, aliasError := aliasService.esClient.Indices.GetAlias(func(request *esapi.IndicesGetAliasRequest) {
+		request.Name = []string{alias}
+	})
+
+	if aliasError != nil {
+		return -1, aliasError
+	} else if response.StatusCode != http.StatusOK {
+		return -1, migrationsError.AliasNotFoundError
+	}
+	panic("Not implemented")
 }

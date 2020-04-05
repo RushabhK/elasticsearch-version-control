@@ -1,6 +1,7 @@
 package service
 
 import (
+	migrationsError "elasticsearch-version-control/error"
 	"elasticsearch-version-control/testing_utils"
 	"errors"
 	"github.com/elastic/go-elasticsearch/v7"
@@ -65,4 +66,11 @@ func (suite AliasServiceTestSuite) TestShouldRemoveExistingAliasAndSetAliasToNew
 func (suite AliasServiceTestSuite) TestShouldReturnErrorWhenAliasIsSetToIndexWhichDoesNotExist() {
 	aliasError := suite.aliasService.SetAlias(ALIAS, "index-not-present")
 	suite.Equal(errors.New("could not set alias"), aliasError)
+}
+
+func (suite AliasServiceTestSuite) TestShouldReturnAliasNotFoundErrorWhenAliasIsNotPresent() {
+	indexVersion, versionError := suite.aliasService.GetIndexVersion("alias-not-present")
+
+	suite.Equal(migrationsError.AliasNotFoundError, versionError)
+	suite.Equal(-1, indexVersion)
 }
